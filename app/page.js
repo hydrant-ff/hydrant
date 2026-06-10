@@ -66,66 +66,129 @@ export default function Home() {
   }
 
   async function startScanner() {
-    setScannerOpen(true);
-
-    const codeReader =
-      new BrowserMultiFormatReader();
-
-    scannerRef.current = codeReader;
-
     try {
-      const devices =
-        await BrowserMultiFormatReader.listVideoInputDevices();
+      // alten Scanner sauber beenden
+      if (scannerRef.current) {
+        scannerRef.current.reset();
+      }
 
-      const camera =
-        devices[0];
+      // alten Videostream stoppen
+      const video =
+        videoRef.current;
 
-      codeReader.decodeFromVideoDevice(
-        camera?.deviceId,
-        videoRef.current,
-        async (result) => {
-          if (result) {
-            const barcode =
-              result.getText();
+      if (video?.srcObject) {
+        const tracks =
+          video.srcObject.getTracks();
 
-            console.log(
-              "Barcode erkannt:",
-              barcode
-            );
+        tracks.forEach((track) =>
+          track.stop()
+        );
 
-            const { data } =
-              await supabase
-                .from("products")
-                .select("*")
-                .eq("barcode", barcode)
-                .single();
+        video.srcObject = null;
+      }
 
-            if (data) {
-              setLastProduct(data);
-              setCart((prev) => [
-                ...prev,
-                data,
-              ]);
-            } else {
-              alert(
-                `Produkt nicht gefunden: ${barcode}`
-              );
+      setLastProduct(null);
+      setScannerOpen(true);
+
+      // Safari Delay
+      setTimeout(async () => {
+        const codeReader =
+          new BrowserMultiFormatReader();
+
+        scannerRef.current =
+          codeReader;
+
+        try {
+          const devices =
+            await BrowserMultiFormatReader.listVideoInputDevices();
+
+          const camera =
+            devices[0];
+
+          codeReader.decodeFromVideoDevice(
+            camera?.deviceId,
+            videoRef.current,
+            async (result) => {
+              if (result) {
+                const barcode =
+                  result.getText();
+
+                console.log(
+                  "Barcode erkannt:",
+                  barcode
+                );
+
+                const { data } =
+                  await supabase
+                    .from(
+                      "products"
+                    )
+                    .select("*")
+                    .eq(
+                      "barcode",
+                      barcode
+                    )
+                    .single();
+
+                if (data) {
+                  setLastProduct(
+                    data
+                  );
+
+                  setCart(
+                    (prev) => [
+                      ...prev,
+                      data,
+                    ]
+                  );
+                } else {
+                  alert(
+                    `Produkt nicht gefunden: ${barcode}`
+                  );
+                }
+
+                stopScanner();
+              }
             }
+          );
+        } catch (err) {
+          console.error(err);
 
-            stopScanner();
-          }
+          alert(
+            "Kamera konnte nicht geöffnet werden."
+          );
+
+          setScannerOpen(
+            false
+          );
         }
-      );
+      }, 300);
     } catch (err) {
       console.error(err);
-      alert(
-        "Kamera konnte nicht geöffnet werden."
-      );
     }
   }
 
   function stopScanner() {
-    scannerRef.current?.reset();
+    try {
+      scannerRef.current?.reset();
+
+      const video =
+        videoRef.current;
+
+      if (video?.srcObject) {
+        const tracks =
+          video.srcObject.getTracks();
+
+        tracks.forEach((track) =>
+          track.stop()
+        );
+
+        video.srcObject = null;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
     setScannerOpen(false);
   }
 
@@ -175,19 +238,6 @@ export default function Home() {
             textAlign: "center",
           }}
         >
-          <div
-            style={{
-              width: "140px",
-              height: "140px",
-              borderRadius: "999px",
-              background: "#374151",
-              border:
-                "4px solid #dc2626",
-              margin:
-                "0 auto 20px",
-            }}
-          />
-
           <h1>
             {
               selectedMember.first_name
@@ -246,6 +296,9 @@ export default function Home() {
             >
               <video
                 ref={videoRef}
+                autoPlay
+                playsInline
+                muted
                 style={{
                   width: "100%",
                   borderRadius:
@@ -266,9 +319,11 @@ export default function Home() {
                   border:
                     "none",
                   padding:
-                    "12px 24px",
+                    "14px 22px",
                   borderRadius:
                     "12px",
+                  cursor:
+                    "pointer",
                 }}
               >
                 Abbrechen
@@ -315,15 +370,6 @@ export default function Home() {
                 style={{
                   marginRight:
                     "12px",
-                  background:
-                    "#374151",
-                  color: "white",
-                  border:
-                    "none",
-                  padding:
-                    "14px 22px",
-                  borderRadius:
-                    "12px",
                 }}
               >
                 Weiter scannen
@@ -333,17 +379,6 @@ export default function Home() {
                 onClick={
                   bookItems
                 }
-                style={{
-                  background:
-                    "#dc2626",
-                  color: "white",
-                  border:
-                    "none",
-                  padding:
-                    "14px 22px",
-                  borderRadius:
-                    "12px",
-                }}
               >
                 Buchen
               </button>
@@ -386,7 +421,7 @@ export default function Home() {
                     {
                       item.name
                     }{" "}
-                    ×
+                    ×{" "}
                     {
                       item.quantity
                     }
@@ -483,27 +518,8 @@ export default function Home() {
                   "white",
                 textAlign:
                   "left",
-                cursor:
-                  "pointer",
               }}
             >
-              <div
-                style={{
-                  width:
-                    "90px",
-                  height:
-                    "90px",
-                  borderRadius:
-                    "999px",
-                  background:
-                    "#374151",
-                  marginBottom:
-                    "20px",
-                  border:
-                    "3px solid #dc2626",
-                }}
-              />
-
               <h2>
                 {
                   member.first_name
