@@ -27,13 +27,27 @@ export default function Home() {
 
   useEffect(() => {
     async function loadMembers() {
-      const { data } = await supabase
-        .from("members")
-        .select("*")
-        .eq("active", true)
-        .order("last_name", {
-          ascending: true,
-        });
+      const { data, error } =
+  await supabase
+    .from("products")
+    .select("*")
+    .eq(
+      "barcode",
+      barcode.trim()
+    );
+
+console.log(
+  "DB Ergebnis:",
+  data
+);
+
+console.log(
+  "DB Fehler:",
+  error
+);
+
+const product =
+  data?.[0];);
 
       setMembers(data || []);
     }
