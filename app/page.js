@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { BrowserMultiFormatReader } from "@zxing/browser";
+import {
+  BrowserMultiFormatReader,
+  BarcodeFormat,
+  DecodeHintType,
+} from "@zxing/browser";
 
 const supabase = createClient(
   "https://wnotgdoszazajchqziav.supabase.co",
