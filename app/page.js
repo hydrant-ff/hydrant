@@ -10,6 +10,7 @@ const supabase = createClient(
 
 export default function Home() {
   const [members, setMembers] = useState([]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     async function loadMembers() {
@@ -27,11 +28,18 @@ export default function Home() {
     loadMembers();
   }, []);
 
+  const filteredMembers = members.filter((member) =>
+    `${member.first_name} ${member.last_name}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
+
   return (
     <main
       style={{
         minHeight: "100vh",
-        background: "#111827",
+        background:
+          "linear-gradient(to bottom, #081223, #111827)",
         color: "white",
         padding: "20px",
         fontFamily: "Arial",
@@ -45,23 +53,39 @@ export default function Home() {
       >
         <h1
           style={{
-            color: "#dc2626",
-            fontSize: "42px",
+            color: "#ef4444",
+            fontSize: "52px",
+            marginBottom: "8px",
+            fontWeight: "bold",
           }}
         >
           🚒 HYDRANT
         </h1>
+
+        <p
+          style={{
+            color: "#9ca3af",
+            marginTop: 0,
+          }}
+        >
+          Feuerwehr Getränkekasse
+        </p>
       </div>
 
       <input
         placeholder="Mitglied suchen..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
         style={{
           width: "100%",
-          padding: "16px",
-          borderRadius: "12px",
-          border: "none",
-          marginBottom: "24px",
-          fontSize: "18px",
+          padding: "18px",
+          borderRadius: "16px",
+          border: "1px solid #374151",
+          marginBottom: "30px",
+          fontSize: "20px",
+          background: "#1f2937",
+          color: "white",
+          boxSizing: "border-box",
         }}
       />
 
@@ -69,41 +93,57 @@ export default function Home() {
         style={{
           display: "grid",
           gridTemplateColumns:
-            "repeat(auto-fill, minmax(260px, 1fr))",
+            "repeat(auto-fill, minmax(280px, 1fr))",
           gap: "20px",
         }}
       >
-        {members.map((member) => (
+        {filteredMembers.map((member) => (
           <button
             key={member.id}
             style={{
-              background: "#1f2937",
+              background:
+                "linear-gradient(to bottom, #1f2937, #111827)",
               border: "2px solid #dc2626",
-              borderRadius: "18px",
+              borderRadius: "24px",
               padding: "24px",
               color: "white",
               textAlign: "left",
+              cursor: "pointer",
+              transition: "0.2s",
+              boxShadow:
+                "0 4px 20px rgba(0,0,0,0.35)",
             }}
           >
             <div
               style={{
-                width: "80px",
-                height: "80px",
+                width: "90px",
+                height: "90px",
                 borderRadius: "999px",
                 background: "#374151",
-                marginBottom: "16px",
+                marginBottom: "20px",
+                border: "3px solid #dc2626",
               }}
             />
 
-            <h2 style={{ margin: 0 }}>
-              {member.first_name} {member.last_name}
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "24px",
+              }}
+            >
+              {member.first_name}{" "}
+              {member.last_name}
             </h2>
 
             <p
               style={{
-                color: "#d1d5db",
-                marginTop: "10px",
-                fontSize: "18px",
+                color:
+                  Number(member.balance) > 0
+                    ? "#f87171"
+                    : "#4ade80",
+                marginTop: "14px",
+                fontSize: "22px",
+                fontWeight: "bold",
               }}
             >
               Offen:{" "}
