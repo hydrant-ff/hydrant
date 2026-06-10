@@ -2,11 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import {
-  BrowserMultiFormatReader,
-  BarcodeFormat,
-  DecodeHintType,
-} from "@zxing/browser";
+import { BrowserMultiFormatReader } from "@zxing/browser";
 
 const supabase = createClient(
   "https://wnotgdoszazajchqziav.supabase.co",
@@ -56,17 +52,7 @@ export default function Home() {
   async function startScanner() {
     setScannerOpen(true);
 
-    const hints = new Map();
-
-hints.set(
-  DecodeHintType.POSSIBLE_FORMATS,
-  [
-    BarcodeFormat.EAN_13,
-    BarcodeFormat.EAN_8,
-    BarcodeFormat.UPC_A,
-  ]
-);
-
+    
 const codeReader =
   new BrowserMultiFormatReader(hints);
 
