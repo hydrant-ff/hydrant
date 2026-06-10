@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { BrowserMultiFormatReader } from "@zxing/browser";
 
 const supabase = createClient(
   "https://wnotgdoszazajchqziav.supabase.co",
@@ -14,9 +15,20 @@ export default function Home() {
   const [selectedMember, setSelectedMember] =
     useState(null);
 
+  const [scannerOpen, setScannerOpen] =
+    useState(false);
+
+  const [cart, setCart] = useState([]);
+
+  const [lastProduct, setLastProduct] =
+    useState(null);
+
+  const videoRef = useRef(null);
+  const scannerRef = useRef(null);
+
   useEffect(() => {
     async function loadMembers() {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("members")
         .select("*")
         .eq("active", true)
@@ -24,9 +36,7 @@ export default function Home() {
           ascending: true,
         });
 
-      if (!error) {
-        setMembers(data);
-      }
+      setMembers(data || []);
     }
 
     loadMembers();
@@ -39,7 +49,71 @@ export default function Home() {
         .includes(search.toLowerCase())
   );
 
-  // Einkaufsseite
+  async function startScanner() {
+    setScannerOpen(true);
+
+    const codeReader =
+      new BrowserMultiFormatReader();
+
+    scannerRef.current = codeReader;
+
+    try {
+      const devices =
+        await BrowserMultiFormatReader.listVideoInputDevices();
+
+      const backCamera =
+        devices.find((d) =>
+          d.label
+            .toLowerCase()
+            .includes("back")
+        ) || devices[0];
+
+      codeReader.decodeFromVideoDevice(
+        backCamera.deviceId,
+        videoRef.current,
+        async (result) => {
+          if (result) {
+            const barcode =
+              result.getText();
+
+            const { data } =
+              await supabase
+                .from("products")
+                .select("*")
+                .eq("barcode", barcode)
+                .single();
+
+            if (data) {
+              setLastProduct(data);
+              setCart((prev) => [
+                ...prev,
+                data,
+              ]);
+            }
+
+            stopScanner();
+          }
+        }
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function stopScanner() {
+    scannerRef.current?.reset();
+    setScannerOpen(false);
+  }
+
+  function continueScanning() {
+    setLastProduct(null);
+    startScanner();
+  }
+
+  function bookItems() {
+    alert("Buchung kommt im nächsten Schritt 😄");
+  }
+
   if (selectedMember) {
     return (
       <main
@@ -63,7 +137,6 @@ export default function Home() {
             padding: "14px 20px",
             borderRadius: "14px",
             marginBottom: "30px",
-            fontSize: "18px",
             cursor: "pointer",
           }}
         >
@@ -73,28 +146,9 @@ export default function Home() {
         <div
           style={{
             textAlign: "center",
-            marginTop: "40px",
           }}
         >
-          <div
-            style={{
-              width: "140px",
-              height: "140px",
-              borderRadius: "999px",
-              background: "#374151",
-              border:
-                "4px solid #dc2626",
-              margin:
-                "0 auto 20px",
-            }}
-          />
-
-          <h1
-            style={{
-              fontSize: "38px",
-              marginBottom: "10px",
-            }}
-          >
+          <h1>
             {
               selectedMember.first_name
             }{" "}
@@ -105,8 +159,8 @@ export default function Home() {
 
           <p
             style={{
-              fontSize: "28px",
               color: "#f87171",
+              fontSize: "26px",
               fontWeight: "bold",
             }}
           >
@@ -117,28 +171,159 @@ export default function Home() {
             €
           </p>
 
-          <button
-            style={{
-              marginTop: "40px",
-              background: "#dc2626",
-              color: "white",
-              border: "none",
-              padding:
-                "22px 40px",
-              borderRadius:
-                "20px",
-              fontSize: "28px",
-              cursor: "pointer",
-            }}
-          >
-            📷 Scannen starten
-          </button>
+          {!scannerOpen &&
+            !lastProduct && (
+              <button
+                onClick={
+                  startScanner
+                }
+                style={{
+                  background:
+                    "#dc2626",
+                  color: "white",
+                  border:
+                    "none",
+                  padding:
+                    "20px 40px",
+                  borderRadius:
+                    "20px",
+                  fontSize:
+                    "28px",
+                  cursor:
+                    "pointer",
+                  marginTop:
+                    "30px",
+                }}
+              >
+                📷 Scannen starten
+              </button>
+            )}
+
+          {scannerOpen && (
+            <div
+              style={{
+                marginTop: "30px",
+              }}
+            >
+              <video
+                ref={videoRef}
+                style={{
+                  width: "100%",
+                  borderRadius:
+                    "20px",
+                }}
+              />
+
+              <button
+                onClick={
+                  stopScanner
+                }
+                style={{
+                  marginTop:
+                    "20px",
+                }}
+              >
+                Abbrechen
+              </button>
+            </div>
+          )}
+
+          {lastProduct && (
+            <div
+              style={{
+                marginTop: "30px",
+                background:
+                  "#1f2937",
+                padding:
+                  "24px",
+                borderRadius:
+                  "20px",
+              }}
+            >
+              <h2>
+                ✅{" "}
+                {
+                  lastProduct.name
+                }{" "}
+                erkannt
+              </h2>
+
+              <p
+                style={{
+                  fontSize:
+                    "26px",
+                }}
+              >
+                {Number(
+                  lastProduct.price
+                ).toFixed(2)}{" "}
+                €
+              </p>
+
+              <button
+                onClick={
+                  continueScanning
+                }
+                style={{
+                  marginRight:
+                    "12px",
+                }}
+              >
+                Weiter scannen
+              </button>
+
+              <button
+                onClick={
+                  bookItems
+                }
+              >
+                Buchen
+              </button>
+            </div>
+          )}
+
+          {cart.length > 0 && (
+            <div
+              style={{
+                marginTop: "40px",
+                textAlign: "left",
+              }}
+            >
+              <h2>
+                Warenkorb
+              </h2>
+
+              {cart.map(
+                (
+                  item,
+                  index
+                ) => (
+                  <div
+                    key={
+                      index
+                    }
+                    style={{
+                      padding:
+                        "12px 0",
+                    }}
+                  >
+                    {item.name} —{" "}
+                    {Number(
+                      item.price
+                    ).toFixed(
+                      2
+                    )}{" "}
+                    €
+                  </div>
+                )
+              )}
+            </div>
+          )}
         </div>
       </main>
     );
   }
 
-  // Mitgliederseite
   return (
     <main
       style={{
@@ -160,21 +345,10 @@ export default function Home() {
           style={{
             color: "#ef4444",
             fontSize: "52px",
-            marginBottom: "8px",
-            fontWeight: "bold",
           }}
         >
           🚒 HYDRANT
         </h1>
-
-        <p
-          style={{
-            color: "#9ca3af",
-            marginTop: 0,
-          }}
-        >
-          Feuerwehr Getränkekasse
-        </p>
       </div>
 
       <input
@@ -187,13 +361,7 @@ export default function Home() {
           width: "100%",
           padding: "18px",
           borderRadius: "16px",
-          border:
-            "1px solid #374151",
           marginBottom: "30px",
-          fontSize: "20px",
-          background: "#1f2937",
-          color: "white",
-          boxSizing: "border-box",
         }}
       />
 
@@ -216,46 +384,20 @@ export default function Home() {
               }
               style={{
                 background:
-                  "linear-gradient(to bottom, #1f2937, #111827)",
+                  "#1f2937",
                 border:
                   "2px solid #dc2626",
                 borderRadius:
                   "24px",
                 padding:
                   "24px",
-                color: "white",
+                color:
+                  "white",
                 textAlign:
                   "left",
-                cursor:
-                  "pointer",
-                boxShadow:
-                  "0 4px 20px rgba(0,0,0,0.35)",
               }}
             >
-              <div
-                style={{
-                  width:
-                    "90px",
-                  height:
-                    "90px",
-                  borderRadius:
-                    "999px",
-                  background:
-                    "#374151",
-                  marginBottom:
-                    "20px",
-                  border:
-                    "3px solid #dc2626",
-                }}
-              />
-
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize:
-                    "24px",
-                }}
-              >
+              <h2>
                 {
                   member.first_name
                 }{" "}
@@ -264,22 +406,7 @@ export default function Home() {
                 }
               </h2>
 
-              <p
-                style={{
-                  color:
-                    Number(
-                      member.balance
-                    ) > 0
-                      ? "#f87171"
-                      : "#4ade80",
-                  marginTop:
-                    "14px",
-                  fontSize:
-                    "22px",
-                  fontWeight:
-                    "bold",
-                }}
-              >
+              <p>
                 Offen:{" "}
                 {Number(
                   member.balance
