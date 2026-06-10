@@ -27,27 +27,13 @@ export default function Home() {
 
   useEffect(() => {
     async function loadMembers() {
-      const { data, error } =
-  await supabase
-    .from("products")
-    .select("*")
-    .eq(
-      "barcode",
-      barcode.trim()
-    );
-
-console.log(
-  "DB Ergebnis:",
-  data
-);
-
-console.log(
-  "DB Fehler:",
-  error
-);
-
-const product =
-  data?.[0];);
+      const { data } = await supabase
+        .from("members")
+        .select("*")
+        .eq("active", true)
+        .order("last_name", {
+          ascending: true,
+        });
 
       setMembers(data || []);
     }
@@ -81,7 +67,7 @@ const product =
 
   async function startScanner() {
     try {
-      // alten Scanner sauber beenden
+      // alten Scanner sauber stoppen
       if (scannerRef.current) {
         scannerRef.current.reset();
       }
@@ -104,7 +90,7 @@ const product =
       setLastProduct(null);
       setScannerOpen(true);
 
-      // Safari Delay
+      // kleiner Safari Delay
       setTimeout(async () => {
         const codeReader =
           new BrowserMultiFormatReader();
@@ -125,14 +111,19 @@ const product =
             async (result) => {
               if (result) {
                 const barcode =
-                  result.getText();
+                  result
+                    .getText()
+                    .trim();
 
                 console.log(
                   "Barcode erkannt:",
                   barcode
                 );
 
-                const { data } =
+                const {
+                  data,
+                  error,
+                } =
                   await supabase
                     .from(
                       "products"
@@ -141,18 +132,30 @@ const product =
                     .eq(
                       "barcode",
                       barcode
-                    )
-                    .single();
+                    );
 
-                if (data) {
+                console.log(
+                  "DB Ergebnis:",
+                  data
+                );
+
+                console.log(
+                  "DB Fehler:",
+                  error
+                );
+
+                const product =
+                  data?.[0];
+
+                if (product) {
                   setLastProduct(
-                    data
+                    product
                   );
 
                   setCart(
                     (prev) => [
                       ...prev,
-                      data,
+                      product,
                     ]
                   );
                 } else {
@@ -381,10 +384,6 @@ const product =
                 onClick={
                   continueScanning
                 }
-                style={{
-                  marginRight:
-                    "12px",
-                }}
               >
                 Weiter scannen
               </button>
@@ -485,31 +484,9 @@ const product =
         onChange={(e) =>
           setSearch(e.target.value)
         }
-        style={{
-          width: "100%",
-          padding: "18px",
-          borderRadius: "16px",
-          border:
-            "1px solid #374151",
-          marginBottom:
-            "30px",
-          fontSize: "20px",
-          background:
-            "#1f2937",
-          color: "white",
-          boxSizing:
-            "border-box",
-        }}
       />
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "repeat(auto-fill, minmax(280px, 1fr))",
-          gap: "20px",
-        }}
-      >
+      <div>
         {filteredMembers.map(
           (member) => (
             <button
@@ -519,39 +496,13 @@ const product =
                   member
                 )
               }
-              style={{
-                background:
-                  "linear-gradient(to bottom, #1f2937, #111827)",
-                border:
-                  "2px solid #dc2626",
-                borderRadius:
-                  "24px",
-                padding:
-                  "24px",
-                color:
-                  "white",
-                textAlign:
-                  "left",
-              }}
             >
-              <h2>
-                {
-                  member.first_name
-                }{" "}
-                {
-                  member.last_name
-                }
-              </h2>
-
-              <p>
-                Offen:{" "}
-                {Number(
-                  member.balance
-                ).toFixed(
-                  2
-                )}{" "}
-                €
-              </p>
+              {
+                member.first_name
+              }{" "}
+              {
+                member.last_name
+              }
             </button>
           )
         )}
