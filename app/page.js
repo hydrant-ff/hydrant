@@ -33,7 +33,91 @@ export default function Home() {
       .toLowerCase()
       .includes(search.toLowerCase())
   );
+if (selectedMember) {
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        background:
+          "linear-gradient(to bottom, #081223, #111827)",
+        color: "white",
+        padding: "20px",
+        fontFamily: "Arial",
+      }}
+    >
+      <button
+        onClick={() => setSelectedMember(null)}
+        style={{
+          background: "#1f2937",
+          color: "white",
+          border: "none",
+          padding: "14px 20px",
+          borderRadius: "14px",
+          marginBottom: "30px",
+          fontSize: "18px",
+        }}
+      >
+        ← Zurück
+      </button>
 
+      <div
+        style={{
+          textAlign: "center",
+          marginTop: "40px",
+        }}
+      >
+        <div
+          style={{
+            width: "140px",
+            height: "140px",
+            borderRadius: "999px",
+            background: "#374151",
+            border: "4px solid #dc2626",
+            margin: "0 auto 20px",
+          }}
+        />
+
+        <h1
+          style={{
+            fontSize: "38px",
+            marginBottom: "10px",
+          }}
+        >
+          {selectedMember.first_name}{" "}
+          {selectedMember.last_name}
+        </h1>
+
+        <p
+          style={{
+            fontSize: "28px",
+            color: "#f87171",
+            fontWeight: "bold",
+          }}
+        >
+          Offen:{" "}
+          {Number(
+            selectedMember.balance
+          ).toFixed(2)} €
+        </p>
+
+        <button
+          style={{
+            marginTop: "40px",
+            background: "#dc2626",
+            color: "white",
+            border: "none",
+            padding: "22px 40px",
+            borderRadius: "20px",
+            fontSize: "28px",
+            cursor: "pointer",
+          }}
+        >
+          📷 Scannen starten
+        </button>
+      </div>
+    </main>
+  );
+}
   return (
     <main
       style={{
