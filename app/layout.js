@@ -3,10 +3,10 @@ export const metadata = {
   description: "FW Getränkekasse",
 };
 
-export default function RootLayout(props) {
+export default function RootLayout({ children }) {
   return (
     <html lang="de">
-      <body>{props.children}</body>
+      <body>{children}</body>
     </html>
   );
 }
