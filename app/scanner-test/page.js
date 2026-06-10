@@ -15,9 +15,10 @@ export default function ScannerTest() {
 
   async function startScanner() {
     try {
-      // alten Scanner stoppen
+      // alten Scanner komplett stoppen
       if (scannerRef.current) {
         scannerRef.current.reset();
+        scannerRef.current = null;
       }
 
       // alten Videostream stoppen
@@ -38,7 +39,7 @@ export default function ScannerTest() {
       setBarcode("");
       setScannerOpen(true);
 
-      // kleiner Delay für Safari/iPhone
+      // kleiner Delay für iPhone/Safari
       setTimeout(async () => {
         const codeReader =
           new BrowserMultiFormatReader();
@@ -50,7 +51,7 @@ export default function ScannerTest() {
           const devices =
             await BrowserMultiFormatReader.listVideoInputDevices();
 
-          // Rückkamera erzwingen
+          // Rückkamera bevorzugen
           const camera =
             devices.find(
               (device) =>
@@ -77,14 +78,6 @@ export default function ScannerTest() {
                     .getText()
                     .trim();
 
-                // mehrfaches Triggern verhindern
-                if (
-                  barcode ===
-                  code
-                ) {
-                  return;
-                }
-
                 console.log(
                   "Barcode:",
                   code
@@ -94,45 +87,12 @@ export default function ScannerTest() {
                   code
                 );
 
-                // Kamera direkt stoppen
-                try {
-                  scannerRef.current?.reset();
-
-                  const video =
-                    videoRef.current;
-
-                  if (
-                    video?.srcObject
-                  ) {
-                    const tracks =
-                      video.srcObject.getTracks();
-
-                    tracks.forEach(
-                      (
-                        track
-                      ) =>
-                        track.stop()
-                    );
-
-                    video.srcObject =
-                      null;
-                  }
-                } catch (err) {
-                  console.error(
-                    err
-                  );
-                }
-
-                setScannerOpen(
-                  false
-                );
+                stopScanner();
               }
             }
           );
         } catch (err) {
-          console.error(
-            err
-          );
+          console.error(err);
 
           alert(
             "Kamera konnte nicht geöffnet werden."
@@ -150,7 +110,11 @@ export default function ScannerTest() {
 
   function stopScanner() {
     try {
-      scannerRef.current?.reset();
+      // Scanner komplett resetten
+      if (scannerRef.current) {
+        scannerRef.current.reset();
+        scannerRef.current = null;
+      }
 
       const video =
         videoRef.current;
@@ -169,6 +133,7 @@ export default function ScannerTest() {
       console.error(err);
     }
 
+    // Kamera schließen
     setScannerOpen(false);
   }
 
@@ -297,9 +262,10 @@ export default function ScannerTest() {
           </p>
 
           <button
-            onClick={() =>
-              setBarcode("")
-            }
+            onClick={() => {
+              setBarcode("");
+              startScanner();
+            }}
             style={{
               marginTop:
                 "20px",
