@@ -3,14 +3,10 @@ export const metadata = {
   description: "FW Getränkekasse",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout(props) {
   return (
     <html lang="de">
-      <body>{children}</body>
+      <body>{props.children}</body>
     </html>
   );
 }
