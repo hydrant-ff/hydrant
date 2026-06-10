@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { BrowserMultiFormatReader } from "@zxing/browser";
 
 const supabase = createClient(
   "https://wnotgdoszazajchqziav.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indub3RnZG9zemF6YWpjaHF6aWF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMTE3NDEsImV4cCI6MjA5NjY4Nzc0MX0.mapown-zcnhsmD32_18hvWV9n0Ru8QBCoSDCdK_ZQOs"
+  "DEIN_ANON_KEY_HIER"
 );
 
 export default function Home() {
@@ -15,15 +14,15 @@ export default function Home() {
   const [selectedMember, setSelectedMember] =
     useState(null);
 
-  const [scannerOpen, setScannerOpen] =
-    useState(false);
-
-  const [cart, setCart] = useState([]);
-  const [lastProduct, setLastProduct] =
-    useState(null);
-
-  const videoRef = useRef(null);
-  const scannerRef = useRef(null);
+  // Test-Warenkorb
+  const [cart] = useState([
+    { name: "Cola" },
+    { name: "Cola" },
+    { name: "Cola" },
+    { name: "Wasser" },
+    { name: "Snickers" },
+    { name: "Snickers" },
+  ]);
 
   useEffect(() => {
     async function loadMembers() {
@@ -65,161 +64,6 @@ export default function Home() {
     return Object.values(grouped);
   }
 
-  async function startScanner() {
-    try {
-      // alten Scanner sauber stoppen
-      if (scannerRef.current) {
-        scannerRef.current.reset();
-      }
-
-      // alten Videostream stoppen
-      const video =
-        videoRef.current;
-
-      if (video?.srcObject) {
-        const tracks =
-          video.srcObject.getTracks();
-
-        tracks.forEach((track) =>
-          track.stop()
-        );
-
-        video.srcObject = null;
-      }
-
-      setLastProduct(null);
-      setScannerOpen(true);
-
-      // kleiner Safari Delay
-      setTimeout(async () => {
-        const codeReader =
-          new BrowserMultiFormatReader();
-
-        scannerRef.current =
-          codeReader;
-
-        try {
-          const devices =
-            await BrowserMultiFormatReader.listVideoInputDevices();
-
-          const camera =
-            devices[0];
-
-          codeReader.decodeFromVideoDevice(
-            camera?.deviceId,
-            videoRef.current,
-            async (result) => {
-              if (result) {
-                const barcode =
-                  result
-                    .getText()
-                    .trim();
-
-                console.log(
-                  "Barcode erkannt:",
-                  barcode
-                );
-
-                const {
-                  data,
-                  error,
-                } =
-                  await supabase
-                    .from(
-                      "products"
-                    )
-                    .select("*")
-                    .eq(
-                      "barcode",
-                      barcode
-                    );
-
-                console.log(
-                  "DB Ergebnis:",
-                  data
-                );
-
-                console.log(
-                  "DB Fehler:",
-                  error
-                );
-
-                const product =
-                  data?.[0];
-
-                if (product) {
-                  setLastProduct(
-                    product
-                  );
-
-                  setCart(
-                    (prev) => [
-                      ...prev,
-                      product,
-                    ]
-                  );
-                } else {
-                  alert(
-                    `Produkt nicht gefunden: ${barcode}`
-                  );
-                }
-
-                stopScanner();
-              }
-            }
-          );
-        } catch (err) {
-          console.error(err);
-
-          alert(
-            "Kamera konnte nicht geöffnet werden."
-          );
-
-          setScannerOpen(
-            false
-          );
-        }
-      }, 300);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  function stopScanner() {
-    try {
-      scannerRef.current?.reset();
-
-      const video =
-        videoRef.current;
-
-      if (video?.srcObject) {
-        const tracks =
-          video.srcObject.getTracks();
-
-        tracks.forEach((track) =>
-          track.stop()
-        );
-
-        video.srcObject = null;
-      }
-    } catch (err) {
-      console.error(err);
-    }
-
-    setScannerOpen(false);
-  }
-
-  function continueScanning() {
-    setLastProduct(null);
-    startScanner();
-  }
-
-  function bookItems() {
-    alert(
-      "Buchung kommt im nächsten Schritt 😄"
-    );
-  }
-
   // Einkaufsseite
   if (selectedMember) {
     return (
@@ -245,6 +89,7 @@ export default function Home() {
             borderRadius: "14px",
             marginBottom: "30px",
             cursor: "pointer",
+            fontSize: "18px",
           }}
         >
           ← Zurück
@@ -255,7 +100,25 @@ export default function Home() {
             textAlign: "center",
           }}
         >
-          <h1>
+          <div
+            style={{
+              width: "140px",
+              height: "140px",
+              borderRadius: "999px",
+              background: "#374151",
+              border:
+                "4px solid #dc2626",
+              margin:
+                "0 auto 20px",
+            }}
+          />
+
+          <h1
+            style={{
+              fontSize: "38px",
+              marginBottom: "10px",
+            }}
+          >
             {
               selectedMember.first_name
             }{" "}
@@ -278,171 +141,95 @@ export default function Home() {
             €
           </p>
 
-          {!scannerOpen &&
-            !lastProduct && (
-              <button
-                onClick={
-                  startScanner
-                }
-                style={{
-                  marginTop: "40px",
-                  background:
-                    "#dc2626",
-                  color: "white",
-                  border:
-                    "none",
-                  padding:
-                    "22px 40px",
-                  borderRadius:
-                    "20px",
-                  fontSize:
-                    "28px",
-                  cursor:
-                    "pointer",
-                }}
-              >
-                📷 Scannen starten
-              </button>
+          <button
+            style={{
+              marginTop: "40px",
+              background:
+                "#dc2626",
+              color: "white",
+              border:
+                "none",
+              padding:
+                "22px 40px",
+              borderRadius:
+                "20px",
+              fontSize:
+                "28px",
+              cursor:
+                "pointer",
+            }}
+          >
+            📷 Scannen starten
+          </button>
+
+          <div
+            style={{
+              marginTop: "40px",
+              textAlign: "left",
+              background:
+                "#1f2937",
+              padding:
+                "24px",
+              borderRadius:
+                "20px",
+            }}
+          >
+            <h2>
+              Warenkorb
+            </h2>
+
+            {groupedCart().map(
+              (
+                item,
+                index
+              ) => (
+                <div
+                  key={
+                    index
+                  }
+                  style={{
+                    padding:
+                      "12px 0",
+                    fontSize:
+                      "22px",
+                  }}
+                >
+                  {
+                    item.name
+                  }{" "}
+                  ×{" "}
+                  {
+                    item.quantity
+                  }
+                </div>
+              )
             )}
 
-          {scannerOpen && (
-            <div
+            <button
               style={{
-                marginTop: "30px",
-              }}
-            >
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                style={{
-                  width: "100%",
-                  borderRadius:
-                    "20px",
-                }}
-              />
-
-              <button
-                onClick={
-                  stopScanner
-                }
-                style={{
-                  marginTop:
-                    "20px",
-                  background:
-                    "#374151",
-                  color: "white",
-                  border:
-                    "none",
-                  padding:
-                    "14px 22px",
-                  borderRadius:
-                    "12px",
-                  cursor:
-                    "pointer",
-                }}
-              >
-                Abbrechen
-              </button>
-            </div>
-          )}
-
-          {lastProduct && (
-            <div
-              style={{
-                marginTop: "30px",
+                marginTop:
+                  "30px",
+                width:
+                  "100%",
                 background:
-                  "#1f2937",
+                  "#dc2626",
+                color:
+                  "white",
+                border:
+                  "none",
                 padding:
+                  "20px",
+                borderRadius:
+                  "18px",
+                fontSize:
                   "24px",
-                borderRadius:
-                  "20px",
+                cursor:
+                  "pointer",
               }}
             >
-              <h2>
-                ✅{" "}
-                {
-                  lastProduct.name
-                }{" "}
-                erkannt
-              </h2>
-
-              <p
-                style={{
-                  fontSize:
-                    "28px",
-                }}
-              >
-                {Number(
-                  lastProduct.price
-                ).toFixed(2)}{" "}
-                €
-              </p>
-
-              <button
-                onClick={
-                  continueScanning
-                }
-              >
-                Weiter scannen
-              </button>
-
-              <button
-                onClick={
-                  bookItems
-                }
-              >
-                Buchen
-              </button>
-            </div>
-          )}
-
-          {cart.length > 0 && (
-            <div
-              style={{
-                marginTop: "40px",
-                textAlign: "left",
-                background:
-                  "#1f2937",
-                padding:
-                  "20px",
-                borderRadius:
-                  "20px",
-              }}
-            >
-              <h2>
-                Warenkorb
-              </h2>
-
-              {groupedCart().map(
-                (
-                  item,
-                  index
-                ) => (
-                  <div
-                    key={
-                      index
-                    }
-                    style={{
-                      padding:
-                        "10px 0",
-                      fontSize:
-                        "20px",
-                    }}
-                  >
-                    {
-                      item.name
-                    }{" "}
-                    ×{" "}
-                    {
-                      item.quantity
-                    }
-                  </div>
-                )
-              )}
-            </div>
-          )}
+              Buchen
+            </button>
+          </div>
         </div>
       </main>
     );
@@ -470,12 +257,21 @@ export default function Home() {
           style={{
             color: "#ef4444",
             fontSize: "52px",
-            fontWeight:
-              "bold",
+            marginBottom: "8px",
+            fontWeight: "bold",
           }}
         >
           🚒 HYDRANT
         </h1>
+
+        <p
+          style={{
+            color: "#9ca3af",
+            marginTop: 0,
+          }}
+        >
+          Feuerwehr Getränkekasse
+        </p>
       </div>
 
       <input
@@ -484,9 +280,31 @@ export default function Home() {
         onChange={(e) =>
           setSearch(e.target.value)
         }
+        style={{
+          width: "100%",
+          padding: "18px",
+          borderRadius: "16px",
+          border:
+            "1px solid #374151",
+          marginBottom:
+            "30px",
+          fontSize: "20px",
+          background:
+            "#1f2937",
+          color: "white",
+          boxSizing:
+            "border-box",
+        }}
       />
 
-      <div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(auto-fill, minmax(280px, 1fr))",
+          gap: "20px",
+        }}
+      >
         {filteredMembers.map(
           (member) => (
             <button
@@ -496,13 +314,81 @@ export default function Home() {
                   member
                 )
               }
+              style={{
+                background:
+                  "linear-gradient(to bottom, #1f2937, #111827)",
+                border:
+                  "2px solid #dc2626",
+                borderRadius:
+                  "24px",
+                padding:
+                  "24px",
+                color:
+                  "white",
+                textAlign:
+                  "left",
+                cursor:
+                  "pointer",
+                boxShadow:
+                  "0 4px 20px rgba(0,0,0,0.35)",
+              }}
             >
-              {
-                member.first_name
-              }{" "}
-              {
-                member.last_name
-              }
+              <div
+                style={{
+                  width:
+                    "90px",
+                  height:
+                    "90px",
+                  borderRadius:
+                    "999px",
+                  background:
+                    "#374151",
+                  marginBottom:
+                    "20px",
+                  border:
+                    "3px solid #dc2626",
+                }}
+              />
+
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize:
+                    "24px",
+                }}
+              >
+                {
+                  member.first_name
+                }{" "}
+                {
+                  member.last_name
+                }
+              </h2>
+
+              <p
+                style={{
+                  color:
+                    Number(
+                      member.balance
+                    ) > 0
+                      ? "#f87171"
+                      : "#4ade80",
+                  marginTop:
+                    "14px",
+                  fontSize:
+                    "22px",
+                  fontWeight:
+                    "bold",
+                }}
+              >
+                Offen:{" "}
+                {Number(
+                  member.balance
+                ).toFixed(
+                  2
+                )}{" "}
+                €
+              </p>
             </button>
           )
         )}
