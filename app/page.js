@@ -76,12 +76,17 @@ const codeReader =
       const devices =
         await BrowserMultiFormatReader.listVideoInputDevices();
 
-      const backCamera =
-        devices.find((d) =>
-          d.label
-            .toLowerCase()
-            .includes("back")
-        ) || devices[0];
+     const backCamera =
+  devices.find(
+    (d) =>
+      d.label
+        .toLowerCase()
+        .includes("back") ||
+      d.label
+        .toLowerCase()
+        .includes("rear")
+  ) ||
+  devices[devices.length - 1];
 
       codeReader.decodeFromVideoDevice(
         backCamera.deviceId,
