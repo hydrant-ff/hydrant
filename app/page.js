@@ -10,7 +10,7 @@ const supabase = createClient(
 
 export default function Home() {
   const [members, setMembers] = useState([]);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(null);
 
   useEffect(() => {
     async function loadMembers() {
