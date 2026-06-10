@@ -15,9 +15,30 @@ export default function ScannerTest() {
 
   async function startScanner() {
     try {
+      // alten Scanner stoppen
+      if (scannerRef.current) {
+        scannerRef.current.reset();
+      }
+
+      // alten Videostream stoppen
+      const video =
+        videoRef.current;
+
+      if (video?.srcObject) {
+        const tracks =
+          video.srcObject.getTracks();
+
+        tracks.forEach((track) =>
+          track.stop()
+        );
+
+        video.srcObject = null;
+      }
+
       setBarcode("");
       setScannerOpen(true);
 
+      // kleiner Delay für Safari/iPhone
       setTimeout(async () => {
         const codeReader =
           new BrowserMultiFormatReader();
@@ -25,33 +46,105 @@ export default function ScannerTest() {
         scannerRef.current =
           codeReader;
 
-        const devices =
-          await BrowserMultiFormatReader.listVideoInputDevices();
+        try {
+          const devices =
+            await BrowserMultiFormatReader.listVideoInputDevices();
 
-        const camera =
-          devices[0];
+          // Rückkamera erzwingen
+          const camera =
+            devices.find(
+              (device) =>
+                device.label
+                  .toLowerCase()
+                  .includes("back") ||
+                device.label
+                  .toLowerCase()
+                  .includes("rear")
+            ) ||
+            devices[
+              devices.length - 1
+            ];
 
-        codeReader.decodeFromVideoDevice(
-          camera?.deviceId,
-          videoRef.current,
-          (result) => {
-            if (result) {
-              const code =
-                result
-                  .getText()
-                  .trim();
+          codeReader.decodeFromVideoDevice(
+            camera?.deviceId,
+            videoRef.current,
+            (result) => {
+              if (
+                result?.getText()
+              ) {
+                const code =
+                  result
+                    .getText()
+                    .trim();
 
-              setBarcode(code);
+                // mehrfaches Triggern verhindern
+                if (
+                  barcode ===
+                  code
+                ) {
+                  return;
+                }
+
+                console.log(
+                  "Barcode:",
+                  code
+                );
+
+                setBarcode(
+                  code
+                );
+
+                // Kamera direkt stoppen
+                try {
+                  scannerRef.current?.reset();
+
+                  const video =
+                    videoRef.current;
+
+                  if (
+                    video?.srcObject
+                  ) {
+                    const tracks =
+                      video.srcObject.getTracks();
+
+                    tracks.forEach(
+                      (
+                        track
+                      ) =>
+                        track.stop()
+                    );
+
+                    video.srcObject =
+                      null;
+                  }
+                } catch (err) {
+                  console.error(
+                    err
+                  );
+                }
+
+                setScannerOpen(
+                  false
+                );
+              }
             }
-          }
-        );
+          );
+        } catch (err) {
+          console.error(
+            err
+          );
+
+          alert(
+            "Kamera konnte nicht geöffnet werden."
+          );
+
+          setScannerOpen(
+            false
+          );
+        }
       }, 300);
     } catch (err) {
       console.error(err);
-
-      alert(
-        "Kamera konnte nicht geöffnet werden."
-      );
     }
   }
 
@@ -87,13 +180,14 @@ export default function ScannerTest() {
           "#111827",
         color: "white",
         padding: "20px",
-        fontFamily: "Arial",
-        textAlign: "center",
+        fontFamily:
+          "Arial",
       }}
     >
       <h1
         style={{
-          color: "#ef4444",
+          color:
+            "#ef4444",
           fontSize: "42px",
         }}
       >
@@ -106,9 +200,12 @@ export default function ScannerTest() {
             startScanner
           }
           style={{
+            marginTop:
+              "30px",
             background:
               "#dc2626",
-            color: "white",
+            color:
+              "white",
             border:
               "none",
             padding:
@@ -116,11 +213,9 @@ export default function ScannerTest() {
             borderRadius:
               "20px",
             fontSize:
-              "28px",
+              "24px",
             cursor:
               "pointer",
-            marginTop:
-              "30px",
           }}
         >
           📷 Kamera starten
@@ -130,7 +225,8 @@ export default function ScannerTest() {
       {scannerOpen && (
         <div
           style={{
-            marginTop: "30px",
+            marginTop:
+              "30px",
           }}
         >
           <video
@@ -139,7 +235,8 @@ export default function ScannerTest() {
             playsInline
             muted
             style={{
-              width: "100%",
+              width:
+                "100%",
               borderRadius:
                 "20px",
             }}
@@ -154,7 +251,8 @@ export default function ScannerTest() {
                 "20px",
               background:
                 "#374151",
-              color: "white",
+              color:
+                "white",
               border:
                 "none",
               padding:
@@ -173,7 +271,8 @@ export default function ScannerTest() {
       {barcode && (
         <div
           style={{
-            marginTop: "40px",
+            marginTop:
+              "40px",
             background:
               "#1f2937",
             padding:
@@ -190,12 +289,36 @@ export default function ScannerTest() {
             style={{
               fontSize:
                 "28px",
-              fontWeight:
-                "bold",
+              color:
+                "#4ade80",
             }}
           >
             {barcode}
           </p>
+
+          <button
+            onClick={() =>
+              setBarcode("")
+            }
+            style={{
+              marginTop:
+                "20px",
+              background:
+                "#dc2626",
+              color:
+                "white",
+              border:
+                "none",
+              padding:
+                "14px 22px",
+              borderRadius:
+                "12px",
+              cursor:
+                "pointer",
+            }}
+          >
+            Neuer Test
+          </button>
         </div>
       )}
     </main>
