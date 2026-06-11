@@ -10,48 +10,31 @@ export default function ScannerTest() {
   const [scannerOpen, setScannerOpen] =
     useState(false);
 
+  const [isRestarting, setIsRestarting] =
+    useState(false);
+
   const videoRef = useRef(null);
   const scannerRef = useRef(null);
 
   async function startScanner() {
     try {
-      // alten Scanner komplett stoppen
-      if (scannerRef.current) {
-        scannerRef.current.reset();
-        scannerRef.current = null;
-      }
+      // kompletten alten Scanner killen
+      stopScanner(true);
 
-      // alten Videostream stoppen
-      const video =
-        videoRef.current;
-
-      if (video?.srcObject) {
-        const tracks =
-          video.srcObject.getTracks();
-
-        tracks.forEach((track) =>
-          track.stop()
-        );
-
-        video.srcObject = null;
-      }
-
-      setBarcode("");
       setScannerOpen(true);
 
-      // kleiner Delay für iPhone/Safari
+      // iPhone braucht kurz Zeit
       setTimeout(async () => {
-        const codeReader =
-          new BrowserMultiFormatReader();
-
-        scannerRef.current =
-          codeReader;
-
         try {
+          const codeReader =
+            new BrowserMultiFormatReader();
+
+          scannerRef.current =
+            codeReader;
+
           const devices =
             await BrowserMultiFormatReader.listVideoInputDevices();
 
-          // Rückkamera bevorzugen
           const camera =
             devices.find(
               (device) =>
@@ -102,39 +85,64 @@ export default function ScannerTest() {
             false
           );
         }
-      }, 300);
+      }, 800); // WICHTIG für iPhone
     } catch (err) {
       console.error(err);
     }
   }
 
-  function stopScanner() {
+  function stopScanner(
+    silent = false
+  ) {
     try {
-      // Scanner komplett resetten
-      if (scannerRef.current) {
+      if (
+        scannerRef.current
+      ) {
         scannerRef.current.reset();
-        scannerRef.current = null;
+        scannerRef.current =
+          null;
       }
 
       const video =
         videoRef.current;
 
-      if (video?.srcObject) {
+      if (
+        video?.srcObject
+      ) {
         const tracks =
           video.srcObject.getTracks();
 
-        tracks.forEach((track) =>
-          track.stop()
+        tracks.forEach(
+          (track) =>
+            track.stop()
         );
 
-        video.srcObject = null;
+        video.srcObject =
+          null;
       }
     } catch (err) {
       console.error(err);
     }
 
-    // Kamera schließen
     setScannerOpen(false);
+
+    if (!silent) {
+      setIsRestarting(true);
+
+      // iPhone Kamera freigeben
+      setTimeout(() => {
+        setIsRestarting(false);
+      }, 700);
+    }
+  }
+
+  async function newTest() {
+    setBarcode("");
+
+    // wichtig: kurz warten
+    setTimeout(() => {
+      startScanner();
+    }, 500);
   }
 
   return (
@@ -159,33 +167,32 @@ export default function ScannerTest() {
         🚒 Scanner Test
       </h1>
 
-      {!scannerOpen && (
-        <button
-          onClick={
-            startScanner
-          }
-          style={{
-            marginTop:
-              "30px",
-            background:
-              "#dc2626",
-            color:
-              "white",
-            border:
-              "none",
-            padding:
-              "20px 40px",
-            borderRadius:
-              "20px",
-            fontSize:
-              "24px",
-            cursor:
-              "pointer",
-          }}
-        >
-          📷 Kamera starten
-        </button>
-      )}
+      {!scannerOpen &&
+        !isRestarting && (
+          <button
+            onClick={
+              startScanner
+            }
+            style={{
+              marginTop:
+                "30px",
+              background:
+                "#dc2626",
+              color:
+                "white",
+              border:
+                "none",
+              padding:
+                "20px 40px",
+              borderRadius:
+                "20px",
+              fontSize:
+                "24px",
+            }}
+          >
+            📷 Kamera starten
+          </button>
+        )}
 
       {scannerOpen && (
         <div
@@ -208,24 +215,12 @@ export default function ScannerTest() {
           />
 
           <button
-            onClick={
-              stopScanner
+            onClick={() =>
+              stopScanner()
             }
             style={{
               marginTop:
                 "20px",
-              background:
-                "#374151",
-              color:
-                "white",
-              border:
-                "none",
-              padding:
-                "14px 22px",
-              borderRadius:
-                "12px",
-              cursor:
-                "pointer",
             }}
           >
             Abbrechen
@@ -262,10 +257,7 @@ export default function ScannerTest() {
           </p>
 
           <button
-            onClick={() => {
-              setBarcode("");
-              startScanner();
-            }}
+            onClick={newTest}
             style={{
               marginTop:
                 "20px",
@@ -279,8 +271,6 @@ export default function ScannerTest() {
                 "14px 22px",
               borderRadius:
                 "12px",
-              cursor:
-                "pointer",
             }}
           >
             Neuer Test
