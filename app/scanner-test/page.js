@@ -18,12 +18,10 @@ export default function ScannerTest() {
 
   async function startScanner() {
     try {
-      // kompletten alten Scanner killen
       stopScanner(true);
 
       setScannerOpen(true);
 
-      // iPhone braucht kurz Zeit
       setTimeout(async () => {
         try {
           const codeReader =
@@ -32,25 +30,30 @@ export default function ScannerTest() {
           scannerRef.current =
             codeReader;
 
-          const devices =
-            await BrowserMultiFormatReader.listVideoInputDevices();
+          // WICHTIG:
+          // Rückkamera + kein Zoom erzwingen
+          const constraints = {
+            video: {
+              facingMode: {
+                ideal:
+                  "environment",
+              },
+              width: {
+                ideal: 1280,
+              },
+              height: {
+                ideal: 720,
+              },
+              advanced: [
+                {
+                  zoom: 1,
+                },
+              ],
+            },
+          };
 
-          const camera =
-            devices.find(
-              (device) =>
-                device.label
-                  .toLowerCase()
-                  .includes("back") ||
-                device.label
-                  .toLowerCase()
-                  .includes("rear")
-            ) ||
-            devices[
-              devices.length - 1
-            ];
-
-          codeReader.decodeFromVideoDevice(
-            camera?.deviceId,
+          codeReader.decodeFromConstraints(
+            constraints,
             videoRef.current,
             (result) => {
               if (
@@ -85,7 +88,7 @@ export default function ScannerTest() {
             false
           );
         }
-      }, 800); // WICHTIG für iPhone
+      }, 800);
     } catch (err) {
       console.error(err);
     }
@@ -129,7 +132,6 @@ export default function ScannerTest() {
     if (!silent) {
       setIsRestarting(true);
 
-      // iPhone Kamera freigeben
       setTimeout(() => {
         setIsRestarting(false);
       }, 700);
@@ -139,7 +141,6 @@ export default function ScannerTest() {
   async function newTest() {
     setBarcode("");
 
-    // wichtig: kurz warten
     setTimeout(() => {
       startScanner();
     }, 500);
@@ -148,11 +149,13 @@ export default function ScannerTest() {
   return (
     <main
       style={{
-        minHeight: "100vh",
+        minHeight:
+          "100vh",
         background:
           "#111827",
         color: "white",
-        padding: "20px",
+        padding:
+          "20px",
         fontFamily:
           "Arial",
       }}
@@ -161,7 +164,8 @@ export default function ScannerTest() {
         style={{
           color:
             "#ef4444",
-          fontSize: "42px",
+          fontSize:
+            "42px",
         }}
       >
         🚒 Scanner Test
@@ -202,7 +206,9 @@ export default function ScannerTest() {
           }}
         >
           <video
-            ref={videoRef}
+            ref={
+              videoRef
+            }
             autoPlay
             playsInline
             muted
@@ -211,6 +217,8 @@ export default function ScannerTest() {
                 "100%",
               borderRadius:
                 "20px",
+              objectFit:
+                "cover",
             }}
           />
 
@@ -257,7 +265,9 @@ export default function ScannerTest() {
           </p>
 
           <button
-            onClick={newTest}
+            onClick={
+              newTest
+            }
             style={{
               marginTop:
                 "20px",
