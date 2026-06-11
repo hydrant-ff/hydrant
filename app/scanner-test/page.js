@@ -10,76 +10,25 @@ export default function ScannerTest() {
   const [barcode, setBarcode] =
     useState("");
 
+  const [isBusy, setIsBusy] =
+    useState(false);
+
   const videoRef = useRef(null);
   const scannerRef = useRef(null);
-  const scanningRef = useRef(false);
 
+  // Scanner nur einmal erzeugen
   useEffect(() => {
     scannerRef.current =
       new BrowserMultiFormatReader();
 
     return () => {
-      stopScanner();
+      cleanupCamera();
+      scannerRef.current?.reset();
     };
   }, []);
 
-  async function startScanner() {
-    if (scanningRef.current) return;
-
+  function cleanupCamera() {
     try {
-      scanningRef.current = true;
-
-      setScannerOpen(true);
-      setBarcode("");
-
-      const constraints = {
-        video: {
-          facingMode: {
-            ideal: "environment",
-          },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-      };
-
-      await scannerRef.current.decodeFromConstraints(
-        constraints,
-        videoRef.current,
-        (result) => {
-          if (
-            result?.getText()
-          ) {
-            const code =
-              result
-                .getText()
-                .trim();
-
-            console.log(
-              "Barcode:",
-              code
-            );
-
-            setBarcode(code);
-
-            stopScanner();
-          }
-        }
-      );
-    } catch (err) {
-      console.error(err);
-
-      alert(
-        "Kamera konnte nicht geöffnet werden."
-      );
-
-      stopScanner();
-    }
-  }
-
-  function stopScanner() {
-    try {
-      scannerRef.current?.reset();
-
       const video =
         videoRef.current;
 
@@ -93,37 +42,121 @@ export default function ScannerTest() {
 
         video.srcObject = null;
       }
+
+      scannerRef.current?.reset();
     } catch (err) {
       console.error(err);
     }
+  }
 
-    scanningRef.current = false;
+  async function startScanner() {
+    if (isBusy) return;
+
+    try {
+      setIsBusy(true);
+
+      cleanupCamera();
+
+      setBarcode("");
+      setScannerOpen(true);
+
+      // kurze Pause für Android/iPhone
+      await new Promise((r) =>
+        setTimeout(r, 300)
+      );
+
+      const constraints = {
+        video: {
+          facingMode: {
+            ideal:
+              "environment",
+          },
+          width: {
+            ideal: 1280,
+          },
+          height: {
+            ideal: 720,
+          },
+        },
+      };
+
+      scannerRef.current.decodeFromConstraints(
+        constraints,
+        videoRef.current,
+        (result) => {
+          if (
+            result?.getText()
+          ) {
+            const code =
+              result
+                .getText()
+                .trim();
+
+            console.log(
+              "Barcode erkannt:",
+              code
+            );
+
+            setBarcode(
+              code
+            );
+
+            stopScanner();
+          }
+        }
+      );
+    } catch (err) {
+      console.error(err);
+
+      alert(
+        "Kamera konnte nicht geöffnet werden."
+      );
+
+      stopScanner();
+    } finally {
+      setTimeout(() => {
+        setIsBusy(false);
+      }, 300);
+    }
+  }
+
+  function stopScanner() {
+    cleanupCamera();
     setScannerOpen(false);
   }
 
   async function continueScan() {
     stopScanner();
 
-    // Android braucht etwas Zeit
-    setTimeout(() => {
-      startScanner();
-    }, 1200);
+    // wichtig:
+    // Kamera Zeit geben zum Freigeben
+    await new Promise((r) =>
+      setTimeout(r, 700)
+    );
+
+    startScanner();
   }
 
   return (
     <main
       style={{
-        minHeight: "100vh",
-        background: "#111827",
+        minHeight:
+          "100vh",
+        background:
+          "#111827",
         color: "white",
-        padding: "20px",
-        fontFamily: "Arial",
+        padding:
+          "20px",
+        fontFamily:
+          "Arial",
       }}
     >
       <h1
         style={{
-          color: "#ef4444",
-          fontSize: "42px",
+          color:
+            "#ef4444",
+          fontSize:
+            "42px",
         }}
       >
         🚒 Scanner Test
@@ -136,16 +169,22 @@ export default function ScannerTest() {
               startScanner
             }
             style={{
-              marginTop: "30px",
-              background: "#dc2626",
-              color: "white",
-              border: "none",
+              marginTop:
+                "30px",
+              background:
+                "#dc2626",
+              color:
+                "white",
+              border:
+                "none",
               padding:
                 "20px 40px",
               borderRadius:
                 "20px",
               fontSize:
                 "24px",
+              cursor:
+                "pointer",
             }}
           >
             📷 Kamera starten
@@ -155,18 +194,24 @@ export default function ScannerTest() {
       {scannerOpen && (
         <div
           style={{
-            marginTop: "30px",
+            marginTop:
+              "30px",
           }}
         >
           <video
-            ref={videoRef}
+            ref={
+              videoRef
+            }
             autoPlay
             playsInline
             muted
             style={{
-              width: "100%",
+              width:
+                "100%",
               borderRadius:
                 "20px",
+              objectFit:
+                "cover",
             }}
           />
 
@@ -177,6 +222,18 @@ export default function ScannerTest() {
             style={{
               marginTop:
                 "20px",
+              background:
+                "#374151",
+              color:
+                "white",
+              border:
+                "none",
+              padding:
+                "14px 22px",
+              borderRadius:
+                "12px",
+              cursor:
+                "pointer",
             }}
           >
             Abbrechen
@@ -188,10 +245,12 @@ export default function ScannerTest() {
         barcode && (
           <div
             style={{
-              marginTop: "40px",
+              marginTop:
+                "40px",
               background:
                 "#1f2937",
-              padding: "24px",
+              padding:
+                "24px",
               borderRadius:
                 "20px",
             }}
@@ -204,28 +263,65 @@ export default function ScannerTest() {
               style={{
                 fontSize:
                   "28px",
+                color:
+                  "#4ade80",
               }}
             >
               {barcode}
             </p>
 
-            <button
-              onClick={
-                continueScan
-              }
+            <div
               style={{
+                display:
+                  "flex",
+                gap: "12px",
                 marginTop:
                   "20px",
-                marginRight:
-                  "10px",
               }}
             >
-              Weiter scannen
-            </button>
+              <button
+                onClick={
+                  continueScan
+                }
+                style={{
+                  flex: 1,
+                  background:
+                    "#374151",
+                  color:
+                    "white",
+                  border:
+                    "none",
+                  padding:
+                    "16px",
+                  borderRadius:
+                    "14px",
+                  fontSize:
+                    "18px",
+                }}
+              >
+                Weiter scannen
+              </button>
 
-            <button>
-              Buchen
-            </button>
+              <button
+                style={{
+                  flex: 1,
+                  background:
+                    "#dc2626",
+                  color:
+                    "white",
+                  border:
+                    "none",
+                  padding:
+                    "16px",
+                  borderRadius:
+                    "14px",
+                  fontSize:
+                    "18px",
+                }}
+              >
+                Buchen
+              </button>
+            </div>
           </div>
         )}
     </main>
