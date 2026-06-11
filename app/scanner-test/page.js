@@ -10,9 +10,6 @@ export default function ScannerTest() {
   const [scannerOpen, setScannerOpen] =
     useState(false);
 
-  const [isRestarting, setIsRestarting] =
-    useState(false);
-
   const videoRef = useRef(null);
   const scannerRef = useRef(null);
 
@@ -30,8 +27,7 @@ export default function ScannerTest() {
           scannerRef.current =
             codeReader;
 
-          // WICHTIG:
-          // Rückkamera + kein Zoom erzwingen
+          // Rückkamera + Anti-Zoom
           const constraints = {
             video: {
               facingMode: {
@@ -88,7 +84,7 @@ export default function ScannerTest() {
             false
           );
         }
-      }, 800);
+      }, 500);
     } catch (err) {
       console.error(err);
     }
@@ -128,22 +124,14 @@ export default function ScannerTest() {
     }
 
     setScannerOpen(false);
-
-    if (!silent) {
-      setIsRestarting(true);
-
-      setTimeout(() => {
-        setIsRestarting(false);
-      }, 700);
-    }
   }
 
-  async function newTest() {
+  function newTest() {
     setBarcode("");
 
     setTimeout(() => {
       startScanner();
-    }, 500);
+    }, 400);
   }
 
   return (
@@ -171,32 +159,33 @@ export default function ScannerTest() {
         🚒 Scanner Test
       </h1>
 
-      {!scannerOpen &&
-        !isRestarting && (
-          <button
-            onClick={
-              startScanner
-            }
-            style={{
-              marginTop:
-                "30px",
-              background:
-                "#dc2626",
-              color:
-                "white",
-              border:
-                "none",
-              padding:
-                "20px 40px",
-              borderRadius:
-                "20px",
-              fontSize:
-                "24px",
-            }}
-          >
-            📷 Kamera starten
-          </button>
-        )}
+      {!scannerOpen && (
+        <button
+          onClick={
+            startScanner
+          }
+          style={{
+            marginTop:
+              "30px",
+            background:
+              "#dc2626",
+            color:
+              "white",
+            border:
+              "none",
+            padding:
+              "20px 40px",
+            borderRadius:
+              "20px",
+            fontSize:
+              "24px",
+            cursor:
+              "pointer",
+          }}
+        >
+          📷 Kamera starten
+        </button>
+      )}
 
       {scannerOpen && (
         <div
@@ -229,6 +218,16 @@ export default function ScannerTest() {
             style={{
               marginTop:
                 "20px",
+              background:
+                "#374151",
+              color:
+                "white",
+              border:
+                "none",
+              padding:
+                "14px 22px",
+              borderRadius:
+                "12px",
             }}
           >
             Abbrechen
