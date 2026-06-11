@@ -126,14 +126,19 @@ export default function ScannerTest() {
   }
 
   async function continueScan() {
+    // Scanner sauber stoppen
     stopScanner();
 
-    // wichtig:
-    // Kamera Zeit geben zum Freigeben
+    // Barcode-Anzeige löschen
+    setBarcode("");
+
+    // WICHTIG:
+    // Samsung braucht länger
     await new Promise((r) =>
-      setTimeout(r, 700)
+      setTimeout(r, 1500)
     );
 
+    // neu starten
     startScanner();
   }
 
