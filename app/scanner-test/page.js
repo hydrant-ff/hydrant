@@ -4,9 +4,7 @@ import { useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 
 export default function ScannerTest() {
-  const [barcode, setBarcode] =
-    useState("");
-
+  const [barcode, setBarcode] = useState("");
   const [scannerOpen, setScannerOpen] =
     useState(false);
 
@@ -15,10 +13,12 @@ export default function ScannerTest() {
 
   async function startScanner() {
     try {
+      // alten Scanner komplett stoppen
       stopScanner(true);
 
       setScannerOpen(true);
 
+      // Samsung/iPhone brauchen kurz Zeit
       setTimeout(async () => {
         try {
           const codeReader =
@@ -84,7 +84,7 @@ export default function ScannerTest() {
             false
           );
         }
-      }, 500);
+      }, 800);
     } catch (err) {
       console.error(err);
     }
@@ -94,6 +94,7 @@ export default function ScannerTest() {
     silent = false
   ) {
     try {
+      // Scanner resetten
       if (
         scannerRef.current
       ) {
@@ -102,6 +103,7 @@ export default function ScannerTest() {
           null;
       }
 
+      // Videostream stoppen
       const video =
         videoRef.current;
 
@@ -127,11 +129,16 @@ export default function ScannerTest() {
   }
 
   function newTest() {
+    // Scanner schließen
+    stopScanner();
+
+    // alte Anzeige löschen
     setBarcode("");
 
+    // Kamera sauber neu starten
     setTimeout(() => {
       startScanner();
-    }, 400);
+    }, 1000);
   }
 
   return (
@@ -228,6 +235,8 @@ export default function ScannerTest() {
                 "14px 22px",
               borderRadius:
                 "12px",
+              cursor:
+                "pointer",
             }}
           >
             Abbrechen
@@ -280,6 +289,8 @@ export default function ScannerTest() {
                 "14px 22px",
               borderRadius:
                 "12px",
+              cursor:
+                "pointer",
             }}
           >
             Neuer Test
