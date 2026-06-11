@@ -10,79 +10,61 @@ export default function ScannerTest() {
   const [barcode, setBarcode] =
     useState("");
 
-  const [isBusy, setIsBusy] =
-    useState(false);
-
   const videoRef = useRef(null);
   const scannerRef = useRef(null);
+  const streamRef = useRef(null);
 
-  // Scanner nur einmal erzeugen
   useEffect(() => {
     scannerRef.current =
       new BrowserMultiFormatReader();
 
     return () => {
-      cleanupCamera();
-      scannerRef.current?.reset();
+      stopScanner();
     };
   }, []);
 
-  function cleanupCamera() {
-    try {
-      const video =
-        videoRef.current;
-
-      if (video?.srcObject) {
-        const tracks =
-          video.srcObject.getTracks();
-
-        tracks.forEach((track) =>
-          track.stop()
-        );
-
-        video.srcObject = null;
-      }
-
-      scannerRef.current?.reset();
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
   async function startScanner() {
-    if (isBusy) return;
-
     try {
-      setIsBusy(true);
-
-      cleanupCamera();
+      // Falls noch etwas offen ist
+      stopScanner(true);
 
       setBarcode("");
       setScannerOpen(true);
 
-      // kurze Pause für Android/iPhone
-      await new Promise((r) =>
-        setTimeout(r, 300)
-      );
+      // Rückkamera ohne Zoom
+      const stream =
+        await navigator.mediaDevices.getUserMedia(
+          {
+            video: {
+              facingMode: {
+                ideal:
+                  "environment",
+              },
+              width: {
+                ideal: 1280,
+              },
+              height: {
+                ideal: 720,
+              },
+            },
+          }
+        );
 
-      const constraints = {
-        video: {
-          facingMode: {
-            ideal:
-              "environment",
-          },
-          width: {
-            ideal: 1280,
-          },
-          height: {
-            ideal: 720,
-          },
-        },
-      };
+      streamRef.current =
+        stream;
 
-      scannerRef.current.decodeFromConstraints(
-        constraints,
-        videoRef.current,
+      const video =
+        videoRef.current;
+
+      if (!video) return;
+
+      video.srcObject =
+        stream;
+
+      await video.play();
+
+      scannerRef.current.decodeFromVideoElement(
+        video,
         (result) => {
           if (
             result?.getText()
@@ -113,32 +95,52 @@ export default function ScannerTest() {
       );
 
       stopScanner();
-    } finally {
-      setTimeout(() => {
-        setIsBusy(false);
-      }, 300);
     }
   }
 
-  function stopScanner() {
-    cleanupCamera();
+  function stopScanner(
+    silent = false
+  ) {
+    try {
+      scannerRef.current?.reset();
+
+      if (
+        streamRef.current
+      ) {
+        streamRef.current
+          .getTracks()
+          .forEach(
+            (track) =>
+              track.stop()
+          );
+
+        streamRef.current =
+          null;
+      }
+
+      const video =
+        videoRef.current;
+
+      if (video) {
+        video.pause();
+        video.srcObject =
+          null;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
     setScannerOpen(false);
   }
 
   async function continueScan() {
-    // Scanner sauber stoppen
     stopScanner();
 
-    // Barcode-Anzeige löschen
-    setBarcode("");
-
-    // WICHTIG:
-    // Samsung braucht länger
+    // kurze Pause für Samsung
     await new Promise((r) =>
-      setTimeout(r, 1500)
+      setTimeout(r, 500)
     );
 
-    // neu starten
     startScanner();
   }
 
